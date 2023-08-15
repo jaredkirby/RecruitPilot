@@ -5,3 +5,4 @@ mainTabs.py
 progress
 .mypy_cache
 /resumes
+.streamlit
