@@ -1,10 +1,9 @@
+import os
+import io
 import logging
 import tempfile
 import streamlit as st
 from zipfile import ZipFile
-from dotenv import load_dotenv
-import os
-import io
 
 from langchain.document_loaders import PDFPlumberLoader
 from langchain.chat_models import ChatOpenAI
@@ -19,12 +18,12 @@ from prompts import (
     CPG_STRATEGIC_LOW_FIT_RESUME,
 )
 
+
+openai_api_key = st.secrets["OPENAI_API_KEY"]
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
 
 
 @st.cache_data
@@ -82,7 +81,7 @@ def get_parameters():
     return job_description, high_fit_resume, low_fit_resume
 
 
-# TODO: Switch to OpenAI function LLM call for more reliable response formatting
+# TODO: Switch to OpenAI function LLM call for more reliable response formatting - not an issue for now
 @st.cache_data
 def get_score(
     resume_text,
@@ -237,7 +236,17 @@ def process_resumes(uploaded_resumes):
 
 
 # Streamlit interface
-st.title("Resume Scoring Tool")
+
+PAGE_TITLE = "RecruitPilot"
+PAGE_ICON = "🧐"
+SUB_TITLE = "Resume Scoring Tool"
+LAYOUT = "centered"
+
+st.markdown(
+    f"<h1 style='text-align: center;'>{PAGE_TITLE} {PAGE_ICON} <br> {SUB_TITLE} <br></h1>",
+    unsafe_allow_html=True,
+)
+
 
 with st.form(key="process_form"):
     uploaded_resumes = st.file_uploader(
@@ -304,3 +313,13 @@ if uploaded_resumes and start_button:
 else:
     if start_button:
         st.warning("Please upload resumes before starting the process.")
+
+st.markdown(
+    """
+    ---
+    Built by **Jared Kirby** :wave:
+
+    [Twitter](https://twitter.com/Kirby_) | [GitHub](https://github.com/jaredkirby) | [LinkedIn](https://www.linkedin.com/in/jared-kirby/) | [Portfolio](https://www.jaredkirby.me)
+
+        """
+)

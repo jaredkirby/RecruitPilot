@@ -1,8 +1,6 @@
 .env
 .vscode
 __pycache__
-mainTabs.py
-progress
 .mypy_cache
 /resumes
 .streamlit
