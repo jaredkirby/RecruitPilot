@@ -13,6 +13,12 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
 )
 
+from prompts import (
+    CPG_STRATEGIC_JOB_DESCRIPTION,
+    CPG_STRATEGIC_HIGH_FIT_RESUME,
+    CPG_STRATEGIC_LOW_FIT_RESUME,
+)
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,13 +65,6 @@ def save_to_category_buffer(
     )
 
 
-from prompts import (
-    CPG_STRATEGIC_JOB_DESCRIPTION,
-    CPG_STRATEGIC_HIGH_FIT_RESUME,
-    CPG_STRATEGIC_LOW_FIT_RESUME,
-)
-
-
 def get_parameters():
     job_description = (
         job_description_input
@@ -83,7 +82,7 @@ def get_parameters():
     return job_description, high_fit_resume, low_fit_resume
 
 
-# TODO: Switch to OpenAI function LLM call for more reliable responses
+# TODO: Switch to OpenAI function LLM call for more reliable response formatting
 @st.cache_data
 def get_score(
     resume_text,
@@ -93,7 +92,10 @@ def get_score(
 ):
     print("Getting score...")
     llm = ChatOpenAI(
-        model="gpt-3.5-turbo-16k", temperature=0.0, openai_api_key=openai_api_key
+        model="gpt-3.5-turbo-16k",
+        temperature=0.0,
+        openai_api_key=openai_api_key,
+        verbose=True,
     )
     # Step 1: Check for high fit resume
     if high_fit_resume:
@@ -260,6 +262,7 @@ if start_button:
     st.session_state.stop_button_clicked = False
     st.session_state.processing = True
     st.session_state.progress = 0
+
 
 with st.expander("Select custom inputs"):
     job_description_input = st.text_area("Job Description", key="job_description_input")
