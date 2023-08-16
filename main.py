@@ -59,13 +59,62 @@ def save_to_category_buffer(
     )
 
 
+from prompts import (
+    CPG_STRATEGIC_JOB_DESCRIPTION,
+    CPG_STRATEGIC_HIGH_FIT_RESUME,
+    CPG_STRATEGIC_LOW_FIT_RESUME,
+)
+
+
+def get_parameters():
+    job_description = (
+        job_description_input
+        if job_description_input
+        else CPG_STRATEGIC_JOB_DESCRIPTION
+    )
+    high_fit_resume = (
+        high_fit_resume_input
+        if high_fit_resume_input
+        else CPG_STRATEGIC_HIGH_FIT_RESUME
+    )
+    low_fit_resume = (
+        low_fit_resume_input if low_fit_resume_input else CPG_STRATEGIC_LOW_FIT_RESUME
+    )
+    return job_description, high_fit_resume, low_fit_resume
+
+
 # TODO: Switch to OpenAI function LLM call for more reliable responses
 @st.cache_data
-def get_score(resume_text):
+def get_score(
+    resume_text,
+    job_description,
+    high_fit_resume,
+    low_fit_resume,
+):
     print("Getting score...")
     llm = ChatOpenAI(
         model="gpt-3.5-turbo-16k", temperature=0.0, openai_api_key=openai_api_key
     )
+    # Step 1: Check for high fit resume
+    if high_fit_resume:
+        example_high_fit = (
+            "Example 'high-fit' resume with a score of 0.9 for reference:"
+        )
+        h_div = "-----------------"
+    else:
+        example_high_fit = ""
+        h_div = ""
+        high_fit_resume = ""
+
+    # Step 2: Check for low fit resume
+    if low_fit_resume:
+        example_low_fit = "Example 'low-fit' resume with a score of 0.2 for reference:"
+        l_div = "-----------------"
+    else:
+        example_low_fit = ""
+        l_div = ""
+        low_fit_resume = ""
+
     template = f"""\
 You are an Industrial-Organizational Psychologist who specializes in personnel selection and assessment. 
 Your discipline of study, Industrial-Organizational Psychology, would best prepare you to answer the 
@@ -80,102 +129,39 @@ Applicant Resume:
 
 Job Key Areas of Responsibility:
 -----------------
-1. Strategic Marketing Leadership
-Proven CPG experience.
-Ability to work with clients to develop strategic marketing plans.
-Expertise in various marketing solutions (online, offline, mobile, social, etc.).
-Research and insights interpretation.
-Broad industry knowledge and client category expertise.
-2. Building and Growing Client Relationships
-Understanding clients' businesses.
-Building confidence and credibility.
-Achieving "trusted advisor" status.
-Developing multi-tiered agency-client relationships.
-3. Team Management
-Managing and motivating marketing professionals.
-Fostering teamwork and innovation.
-Understanding project details for accountability.
-4. Financial Performance Management
-Achieving revenue targets.
-Managing and planning accounts.
-Working with business development teams for new opportunities.
-5. Agency Contribution
-Desire to see clients succeed.
-Presentation skills.
-Balancing client demands with agency initiatives.
-Participating in agency leadership goals.
-6. Experience Requirements
-College degree (MBA preferred).
-Approximately 7+ years in the industry (brand or direct marketing experience).
-CPG and grocery retail experience.
-Proven strategic skills and insights.
-Strong knowledge of online and offline disciplines.
-Interpersonal/communication skills.
-Presentation development skills.
-Ability to manage multiple projects and tight deadlines.
-Openness to travel.
+{job_description}
 -----------------
 
-Here is a sample "high-fit" resume with a score of 0.99 for reference:
------------------
-Sample High-Fit Resume for CPG Account Strategist at CEMM
-[Full Name]
+{example_high_fit}
+{h_div}
+{high_fit_resume}
+{h_div}
 
-Email: [Email Address]
-Phone: [Phone Number]
-LinkedIn: [LinkedIn Profile]
-Summary:
-Highly experienced marketing and sales professional with over 7 years of proven success in CPG and grocery retail. 
-Specialized in developing strategic marketing plans, building client relationships, and leading high-performing teams. 
-Adept in online, offline, mobile, and social marketing strategies. Committed to delivering client success and achieving revenue targets.
-
-Professional Experience:
-
-Senior Sales Professional (From Alexandre Alves's Resume)
-
-Experienced in Account and Sales Management within the CPG market.
-Managed operations encompassing sales, logistics, and distribution.
-Guided teams to achieve objectives within tight timelines.
-Impact-driven Strategist (From Basem Ebied's Resume)
-
-Specialized in driving sales and brand growth.
-Collaborated with cross-functional teams to optimize user experiences.
-Delivered successful campaign outcomes and management results.
-Senior Marketing Manager (From John M. Robertson's Resume)
-
-20+ years of solid marketing experience building strong brands.
-Developed strategic and integrated brand plans.
-Created effective brand positioning and executed profitable growth strategies.
-Product Marketing Manager (From Kristin Leon's Resume)
-
-Developed and executed marketing and portfolio strategy for CBG brands.
-Managed commercialization and localization of product workflow.
-Education:
-
-Bachelor's Degree in Marketing: [University Name]
-MBA (Preferred): [University Name]
-Skills:
-
-Strong interpersonal/communication skills.
-Excellent presentation development and delivery skills.
-Ability to manage multiple concurrent projects and meet tight deadlines.
-Strong work ethic, integrity, and good business acumen.
-Additional Information:
-
-Open to travel as needed.
-Strong knowledge of upper and lower funnel strategies and tactics.
-Confidence without ego.
------------------
+{example_low_fit}
+{l_div}
+{low_fit_resume}
+{l_div}
 
 Remember, your task is to determine a job fit score as a float between 0 and 1 (Example: 0.9) and a short explanation for score.
 Respond with only the score and explanation. Do not include the resume or job description in your response.
+
+RESPONSE FORMAT:
+Job Fit Score: 
+Explanation:
 
 Job Fit Score:
     """
 
     user_prompt = HumanMessagePromptTemplate.from_template(template=template)
     chat_prompt = ChatPromptTemplate.from_messages([user_prompt])
-    formatted_prompt = chat_prompt.format_prompt(input=resume_text).to_messages()
+    formatted_prompt = chat_prompt.format_prompt(
+        resume_text=resume_text,
+        job_description=job_description,
+        high_fit_resume=high_fit_resume,
+        low_fit_resume=low_fit_resume,
+        l_div=l_div,
+        h_div=h_div,
+    ).to_messages()
     llm = llm
     result = llm(formatted_prompt)
     return result.content
@@ -205,6 +191,9 @@ def parse_resume_bytes(resume_bytes):
 
 
 def process_resumes(uploaded_resumes):
+    # Get the values for job_description, high_fit_resume, and low_fit_resume
+    job_description, high_fit_resume, low_fit_resume = get_parameters()
+
     zip_buffer = io.BytesIO()
     try:
         with ZipFile(zip_buffer, "a") as main_zip:
@@ -221,8 +210,10 @@ def process_resumes(uploaded_resumes):
 
                 # Read resume bytes
                 resume_bytes = resume_file.getbuffer()
-                resume_text = parse_resume_bytes(resume_bytes)  # Using the new function
-                result_content = get_score(resume_text)
+                resume_text = parse_resume_bytes(resume_bytes)
+                result_content = get_score(
+                    resume_text, job_description, high_fit_resume, low_fit_resume
+                )
                 score, _ = parse_score_and_explanation(result_content)
                 category = categorize_score(score)
 
@@ -269,6 +260,15 @@ if start_button:
     st.session_state.stop_button_clicked = False
     st.session_state.processing = True
     st.session_state.progress = 0
+
+with st.expander("Select custom inputs"):
+    job_description_input = st.text_area("Job Description", key="job_description_input")
+    high_fit_resume_input = st.text_area(
+        "High-Fit Resume Example", key="high_fit_resume_input"
+    )
+    low_fit_resume_input = st.text_area(
+        "Low-Fit Resume Example", key="low_fit_resume_input"
+    )
 
 # Display the stop button only when processing is True
 if st.session_state.processing:
