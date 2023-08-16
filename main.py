@@ -378,7 +378,7 @@ else:
         st.warning("Please upload resumes before starting the process.")
 
 st.markdown(
-    f"**About:**<p style='text-align: center;'>{DESCRIPTION}</p>",
+    f"<p style='text-align: center;'>{DESCRIPTION}</p>",
     unsafe_allow_html=True,
 )
 
