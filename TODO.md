@@ -1,0 +1,5 @@
+- Switch LLM call to use the OpenAI Functions API
+- Config file
+- PDF upload for custom inputs
+- Display names of "best" resumes after processing + download all
+- Improve status messages 
