@@ -247,7 +247,6 @@ st.markdown(
     f"<h1 style='text-align: center;'>{PAGE_TITLE} {PAGE_ICON} <br> {SUB_TITLE} <br></h1>",
     unsafe_allow_html=True,
 )
-st.
 
 with st.form(key="process_form"):
     uploaded_resumes = st.file_uploader(
