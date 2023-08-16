@@ -3,3 +3,4 @@
 - PDF upload for custom inputs
 - Display names of "best" resumes after processing + download all
 - Improve status messages 
+- Create system to auto generate sample high and low resumes based on job description
