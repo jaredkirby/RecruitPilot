@@ -4,3 +4,4 @@ __pycache__
 .mypy_cache
 /resumes
 .streamlit
+/good_res
