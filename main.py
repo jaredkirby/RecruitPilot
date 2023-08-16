@@ -12,10 +12,15 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
 )
 
-from prompts import (
+from prompts.cpg_strategic import (
     CPG_STRATEGIC_JOB_DESCRIPTION,
     CPG_STRATEGIC_HIGH_FIT_RESUME,
     CPG_STRATEGIC_LOW_FIT_RESUME,
+)
+from prompts.advertising_assistant import (
+    ADVERTISING_ASSISTANT_JOB_DESCRIPTION,
+    ADVERTISING_ASSISTANT_HIGH_FIT_RESUME,
+    ADVERTISING_ASSISTANT_LOW_FIT_RESUME,
 )
 
 
@@ -64,19 +69,24 @@ def save_to_category_buffer(
     )
 
 
-def get_parameters():
+def get_parameters(
+    selected_job, job_description_input, high_fit_resume_input, low_fit_resume_input
+):
+    selected_prompts = PROMPTS_MAPPING[selected_job]
     job_description = (
         job_description_input
         if job_description_input
-        else CPG_STRATEGIC_JOB_DESCRIPTION
+        else selected_prompts["job_description"]
     )
     high_fit_resume = (
         high_fit_resume_input
         if high_fit_resume_input
-        else CPG_STRATEGIC_HIGH_FIT_RESUME
+        else selected_prompts["high_fit_resume"]
     )
     low_fit_resume = (
-        low_fit_resume_input if low_fit_resume_input else CPG_STRATEGIC_LOW_FIT_RESUME
+        low_fit_resume_input
+        if low_fit_resume_input
+        else selected_prompts["low_fit_resume"]
     )
     return job_description, high_fit_resume, low_fit_resume
 
@@ -163,6 +173,7 @@ Job Fit Score:
         l_div=l_div,
         h_div=h_div,
     ).to_messages()
+    # print(formatted_prompt)
     llm = llm
     result = llm(formatted_prompt)
     return result.content
@@ -192,8 +203,15 @@ def parse_resume_bytes(resume_bytes):
 
 
 def process_resumes(uploaded_resumes):
+    # Define the input variables here based on the selected job
+    job_description_input = st.session_state.job_description_input
+    high_fit_resume_input = st.session_state.high_fit_resume_input
+    low_fit_resume_input = st.session_state.low_fit_resume_input
+
     # Get the values for job_description, high_fit_resume, and low_fit_resume
-    job_description, high_fit_resume, low_fit_resume = get_parameters()
+    job_description, high_fit_resume, low_fit_resume = get_parameters(
+        selected_job, job_description_input, high_fit_resume_input, low_fit_resume_input
+    )
 
     zip_buffer = io.BytesIO()
     try:
@@ -238,21 +256,68 @@ def process_resumes(uploaded_resumes):
 # Streamlit interface
 
 PAGE_TITLE = "RecruitPilot"
-PAGE_ICON = "🧐"
+PAGE_ICON = "🎯"
 SUB_TITLE = "Resume Scoring Tool"
+DESCRIPTION = "This tool uses AI to score (with an explanation) and categorize resumes based on a job description. Then provides a downloadable folder with the original resumes in their respective categories."
 LAYOUT = "centered"
+
+PROMPTS_MAPPING = {
+    "Senior CPG Account Strategist": {
+        "folder": "cpg_strategic",
+        "job_description": CPG_STRATEGIC_JOB_DESCRIPTION,
+        "high_fit_resume": CPG_STRATEGIC_HIGH_FIT_RESUME,
+        "low_fit_resume": CPG_STRATEGIC_LOW_FIT_RESUME,
+    },
+    "Advertising Assistant": {
+        "folder": "advertising_assistant",
+        "job_description": ADVERTISING_ASSISTANT_JOB_DESCRIPTION,
+        "high_fit_resume": ADVERTISING_ASSISTANT_HIGH_FIT_RESUME,
+        "low_fit_resume": ADVERTISING_ASSISTANT_LOW_FIT_RESUME,
+    },
+}
+
 
 st.set_page_config(page_title=PAGE_TITLE, page_icon=PAGE_ICON, layout=LAYOUT)
 st.markdown(
-    f"<h1 style='text-align: center;'>{PAGE_TITLE} {PAGE_ICON} <br> {SUB_TITLE} <br></h1>",
+    f"<h1 style='text-align: center;'>{PAGE_TITLE} {PAGE_ICON} <br> {SUB_TITLE}</h1>",
     unsafe_allow_html=True,
 )
+st.markdown("---")
 
-with st.form(key="process_form"):
-    uploaded_resumes = st.file_uploader(
-        "Upload Resumes (PDF files)", type=["pdf"], accept_multiple_files=True
+
+def select_job():
+    if "selected_job" not in st.session_state:
+        st.session_state.selected_job = "Senior CPG Account Strategist"
+    st.session_state.selected_job = st.selectbox(
+        "Select a default open position or add your own",
+        ("Senior CPG Account Strategist", "Advertising Assistant", "Other"),
+        index=0,
+        key="job_selection",
     )
-    start_button = st.form_submit_button("Start Scoring")
+    return st.session_state.selected_job
+
+
+selected_job = select_job()
+
+uploaded_resumes = st.file_uploader(
+    "Upload Resumes (PDF files)", type=["pdf"], accept_multiple_files=True
+)
+
+if selected_job == "Other":
+    with st.expander("Enter a job description and resume examples (optional)"):
+        st.session_state.job_description_input = st.text_area(
+            "Job Description (required if not using a default position)",
+            key="job_description_input",
+        )
+        st.session_state.high_fit_resume_input = st.text_area(
+            "High-Fit Resume Example (optional)", key="high_fit_resume_input"
+        )
+        st.session_state.low_fit_resume_input = st.text_area(
+            "Low-Fit Resume Example (optional)", key="low_fit_resume_input"
+        )
+
+start_button = st.button("Start Scoring")
+
 
 # Initialize session state variables
 if "stop_button_clicked" not in st.session_state:
@@ -263,6 +328,13 @@ if "progress" not in st.session_state:
     st.session_state.progress = 0
 if "processing" not in st.session_state:
     st.session_state.processing = False
+if "job_description_input" not in st.session_state:
+    st.session_state.job_description_input = ""
+if "high_fit_resume_input" not in st.session_state:
+    st.session_state.high_fit_resume_input = ""
+if "low_fit_resume_input" not in st.session_state:
+    st.session_state.low_fit_resume_input = ""
+
 
 status_text = st.empty()
 status_text.text(st.session_state.status_text)  # Status text now updates dynamically
@@ -272,15 +344,6 @@ if start_button:
     st.session_state.processing = True
     st.session_state.progress = 0
 
-
-with st.expander("Select custom inputs"):
-    job_description_input = st.text_area("Job Description", key="job_description_input")
-    high_fit_resume_input = st.text_area(
-        "High-Fit Resume Example", key="high_fit_resume_input"
-    )
-    low_fit_resume_input = st.text_area(
-        "Low-Fit Resume Example", key="low_fit_resume_input"
-    )
 
 # Display the stop button only when processing is True
 if st.session_state.processing:
@@ -313,6 +376,11 @@ if uploaded_resumes and start_button:
 else:
     if start_button:
         st.warning("Please upload resumes before starting the process.")
+
+st.markdown(
+    f"**About:**<p style='text-align: center;'>{DESCRIPTION}</p>",
+    unsafe_allow_html=True,
+)
 
 st.markdown(
     """
