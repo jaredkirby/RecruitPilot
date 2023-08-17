@@ -110,7 +110,7 @@ def get_score(
     # Step 1: Check for high fit resume
     if high_fit_resume:
         example_high_fit = (
-            "Example 'high-fit' resume with a score of 0.9 for reference:"
+            "Example 'high-fit' resume with a score of 0.99 for reference:"
         )
         h_div = "-----------------"
     else:
@@ -120,7 +120,7 @@ def get_score(
 
     # Step 2: Check for low fit resume
     if low_fit_resume:
-        example_low_fit = "Example 'low-fit' resume with a score of 0.2 for reference:"
+        example_low_fit = "Example 'low-fit' resume with a score of 0.10 for reference:"
         l_div = "-----------------"
     else:
         example_low_fit = ""
@@ -132,7 +132,7 @@ You are an Industrial-Organizational Psychologist who specializes in personnel s
 Your discipline of study, Industrial-Organizational Psychology, would best prepare you to answer the 
 question or perform the task of determining a job fit score based on a resume and a job description. 
 
-You will review the following resume and job description and determine a job fit score as a float between 0 and 1 (Example: 0.7) and a short explanation for the score.
+You will review the following resume and job description and determine a job fit score as a float between 0 and 1 (Example: 0.75) and a short explanation for the score.
 
 Applicant Resume:
 -----------------
@@ -154,7 +154,7 @@ Job Key Areas of Responsibility:
 {low_fit_resume}
 {l_div}
 
-Remember, your task is to determine a job fit score as a float between 0 and 1 (Example: 0.9) and a short explanation for score.
+Remember, your task is to determine a job fit score as a float between 0 and 1 (Example: 0.99) and a short explanation for score.
 Respond with only the score and explanation. Do not include the resume or job description in your response.
 
 RESPONSE FORMAT:
@@ -367,17 +367,15 @@ if uploaded_resumes:
         "Select a 'best' score threshold",
         0.0,
         1.0,
-        0.7,
-        0.1,
-        help="Default is 0.7. The lower the threshold, the more resumes will be categorized as 'best'.",
+        0.8,
+        help="Default is 0.8. The lower the threshold, the more resumes will be categorized as 'best'.",
     )
     good_select = st.slider(
         "Select a 'good' score threshold",
         0.0,
         1.0,
-        0.5,
-        0.1,
-        help="Default is 0.5. The lower the threshold, the more resumes will be categorized as 'good'.",
+        0.6,
+        help="Default is 0.6. The lower the threshold, the more resumes will be categorized as 'good'.",
     )
 
 
