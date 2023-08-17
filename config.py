@@ -13,11 +13,18 @@ from prompts.advertising_assistant import (
 PAGE_TITLE = "RecruitPilot"
 PAGE_ICON = "🎯"
 SUB_TITLE = "Resume Scoring Tool"
-DESCRIPTION = "This tool uses AI to score (with an explanation) and categorize resumes based on a job description. Then provides a downloadable folder with the original resumes in their respective categories."
 LAYOUT = "centered"
+FOOTER = """
+    ---
+    Built by **Jared Kirby** :wave:
 
-# LLM & Category Config
+    [Twitter](https://twitter.com/Kirby_) | [GitHub](https://github.com/jaredkirby) | [LinkedIn](https://www.linkedin.com/in/jared-kirby/) | [Portfolio](https://www.jaredkirby.me)
+
+        """
+
+# LLM
 MODEL = "gpt-3.5-turbo-16k"
+MODEL_QUESTIONS = "gpt-4"
 
 # Prompt Config
 PROMPTS_MAPPING = {
