@@ -16,7 +16,6 @@ from config import (
     PAGE_TITLE,
     PAGE_ICON,
     SUB_TITLE,
-    DESCRIPTION,
     LAYOUT,
     PROMPTS_MAPPING,
     MODEL,
@@ -221,7 +220,7 @@ def process_resumes(uploaded_resumes):
     # Create a dictionary to store the categorization results
     categorization_results = {"best": [], "good": [], "rest": []}
 
-    # Parse the input
+    # Parse the custom user input
     job_description = parse_input(job_description_file, "job_description_input")
     high_fit_resume = parse_input(high_fit_resume_file, "high_fit_resume_input")
     low_fit_resume = parse_input(low_fit_resume_file, "low_fit_resume_input")
@@ -235,36 +234,38 @@ def process_resumes(uploaded_resumes):
     try:
         with ZipFile(zip_buffer, "a") as main_zip:
             for i, resume_file in enumerate(uploaded_resumes):
-                # Check if the stop button was clicked
+                # User stopping mechanism
                 if st.session_state.stop_button_clicked:
                     st.session_state.status_text = "Process stopped by user."
                     break
 
-                # Update status text with current step
+                # Update progress
                 st.session_state.status_text = (
                     f"Processing resume {i + 1}/{len(uploaded_resumes)}..."
                 )
 
-                # Read resume bytes
+                # Read and parse resume bytes
                 resume_bytes = resume_file.getbuffer()
                 resume_text = parse_resume_bytes(resume_bytes)
+
+                # Get score for the resume
                 result_content = get_score(
                     resume_text, job_description, high_fit_resume, low_fit_resume
                 )
                 score, _ = parse_score_and_explanation(result_content)
+
+                # Categorize the score
                 category = categorize_score(score, best_select, good_select)
 
+                # Save the resume to the appropriate category buffer
                 applicant_name = os.path.splitext(resume_file.name)[0]
-                # Save the applicant's name to the appropriate category
                 categorization_results[category].append(applicant_name)
-
-                # Assuming the applicant's name is part of the filename; adapt as needed
-                applicant_name = os.path.splitext(resume_file.name)[0]
 
                 save_to_category_buffer(
                     category, applicant_name, resume_bytes, result_content, main_zip
                 )
 
+                # Update progress bar
                 st.session_state.progress = (i + 1) / len(uploaded_resumes)
                 progress_bar.progress(int(st.session_state.progress * 100))
 
@@ -276,9 +277,8 @@ def process_resumes(uploaded_resumes):
 
 
 # Streamlit interface
-
-
 st.set_page_config(page_title=PAGE_TITLE, page_icon=PAGE_ICON, layout=LAYOUT)
+
 st.markdown(
     f"<h1 style='text-align: center;'>{PAGE_TITLE} {PAGE_ICON} <br> {SUB_TITLE}</h1>",
     unsafe_allow_html=True,
@@ -433,8 +433,24 @@ else:
         st.warning("Please upload resumes before starting the process.")
 
 
-with st.expander("About 🤔"):
-    st.info(f"{DESCRIPTION}")
+with st.expander("🤔 How to Use"):
+    st.info(
+        f"""
+This tool 🛠️ uses the OpenAI API 🧠 to score (with an explanation) and categorize resumes based on a job description Then provides a downloadable file with the original resumes in their respective categories.
+
+1️⃣) Select a job description from the dropdown menu or input your own ✏️.
+
+1️⃣ .5) If you input your own job description, you can also upload a PDF or enter text examples of a high-fit ✅ and low-fit ❌ resume to the specified job description. This will increase the accuracy 🎯 of the scoring.
+
+2️⃣) Upload resumes to score and categorize 📑. You can upload multiple resumes at once.
+
+3️⃣) Click the "Start Scoring Resumes" button.
+
+4️⃣) Once the process is complete, a download button will appear to export the scores and categorized resumes 📥.
+
+📌Note: The OpenAI models do make mistakes 😅 and the results may not be perfect ✨. If you have any questions or feedback, please reach out to me on [Twitter](https://twitter.com/Kirby_).
+            """
+    )
 
 st.markdown(
     """
