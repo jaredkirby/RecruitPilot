@@ -36,8 +36,6 @@ Openness to travel.
 """
 
 CPG_STRATEGIC_HIGH_FIT_RESUME = """
-Example "high-fit" resume with a score of 0.9 for reference:
------------------
 Sample High-Fit Resume for CPG Account Strategist at CEMM
 [Full Name]
 
@@ -85,12 +83,9 @@ Additional Information:
 Open to travel as needed.
 Strong knowledge of upper and lower funnel strategies and tactics.
 Confidence without ego.
------------------
 """
 
 CPG_STRATEGIC_LOW_FIT_RESUME = """
-Example "low-fit" resume with a score of 0.1 for reference:
------------------
 Sample Low-Fit Resume for CPG Account Strategist at CEMM
 [Full Name]
 
@@ -120,5 +115,4 @@ Skills:
 Basic cooking techniques.
 Customer service.
 Social media management.
------------------
 """

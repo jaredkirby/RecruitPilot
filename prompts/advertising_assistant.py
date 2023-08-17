@@ -24,8 +24,6 @@ Strong interpersonal and communication skills
 """
 
 ADVERTISING_ASSISTANT_HIGH_FIT_RESUME = """
-Example "high-fit" resume with a score of 0.9 for reference:
------------------
 Example "High-Fit" Resume for Advertising Assistant Position
 Name: [Candidate Name]
 Address: [Address]
@@ -66,12 +64,9 @@ Technical Skills: Proficient in Microsoft Office Suite, Excel, Word, PowerPoint,
 Interpersonal Skills: Strong attention to detail, ability to work independently and as part of a team, multitasking.
 References
 Available upon request.
------------------
 """
 
 ADVERTISING_ASSISTANT_LOW_FIT_RESUME = """
-Example "low-fit" resume with a score of 0.1 for reference:
------------------
 Example "Low-Fit" Resume for Advertising Assistant Position
 Name: [Candidate Name]
 Address: [Address]
@@ -113,5 +108,4 @@ Environmental Skills: Marine conservation, ecological assessment, environmental 
 Other Skills: Basic knowledge of Microsoft Word (No experience with Excel or PowerPoint).
 References
 Available upon request.
------------------
 """
