@@ -97,7 +97,8 @@ def get_parameters(
     return job_description, high_fit_resume, low_fit_resume
 
 
-# TODO: Switch to OpenAI function LLM call for more reliable response formatting - not an issue for now
+# TODO: Switch to OpenAI function LLM call for more reliable response formatting
+# not an issue for now
 @st.cache_data
 def get_score(
     resume_text,
@@ -132,11 +133,15 @@ def get_score(
         low_fit_resume = ""
 
     template = f"""\
-You are an Industrial-Organizational Psychologist who specializes in personnel selection and assessment. 
-Your discipline of study, Industrial-Organizational Psychology, would best prepare you to answer the 
-question or perform the task of determining a job fit score based on a resume and a job description. 
+You are an Industrial-Organizational Psychologist who specializes in personnel 
+selection and assessment. 
+Your discipline of study, Industrial-Organizational Psychology, would best prepare you 
+to answer the 
+question or perform the task of determining a job fit score based on a resume and a 
+job description. 
 
-You will review the following resume and job description and determine a job fit score as a float between 0 and 1 (Example: 0.75) and a short explanation for the score.
+You will review the following resume and job description and determine a job fit score 
+as a float between 0 and 1 (Example: 0.75) and a short explanation for the score.
 
 Applicant Resume:
 -----------------
@@ -158,8 +163,10 @@ Job Key Areas of Responsibility:
 {low_fit_resume}
 {l_div}
 
-Remember, your task is to determine a job fit score as a float between 0 and 1 (Example: 0.99) and a short explanation for score.
-Respond with only the score and explanation. Do not include the resume or job description in your response.
+Remember, your task is to determine a job fit score as a float between 0 and 1 
+(Example: 0.99) and a short explanation for score.
+Respond with only the score and explanation. Do not include the resume or job 
+description in your response.
 
 RESPONSE FORMAT:
 Job Fit Score: 
@@ -372,14 +379,16 @@ if uploaded_resumes:
         0.0,
         1.0,
         0.8,
-        help="Default is 0.8. The lower the threshold, the more resumes will be categorized as 'best'.",
+        help="Default is 0.8. The lower the threshold, the more resumes will be \
+            categorized as 'best'.",
     )
     good_select = st.slider(
         "Select a 'good' score threshold",
         0.0,
         1.0,
         0.6,
-        help="Default is 0.6. The lower the threshold, the more resumes will be categorized as 'good'.",
+        help="Default is 0.6. The lower the threshold, the more resumes will be \
+            categorized as 'good'.",
     )
 
 
@@ -410,14 +419,16 @@ if st.session_state.processing:
 if uploaded_resumes and start_button:
     st.session_state.status_text = "Starting the process..."
     try:
-        zip_data, categorization_results = process_resumes(uploaded_resumes)
-        if zip_data:
-            st.download_button(
-                label="✨ Download Scores ✨",
-                data=zip_data,
-                file_name="scores.zip",
-                mime="application/zip",
-            )
+        result = process_resumes(uploaded_resumes)
+        if result is not None:
+            zip_data, categorization_results = result
+            if zip_data:
+                st.download_button(
+                    label="✨ Download Scores ✨",
+                    data=zip_data,
+                    file_name="scores.zip",
+                    mime="application/zip",
+                )
             # Displaying the results
             st.markdown("##### Categorized:")
             for category, resumes in categorization_results.items():

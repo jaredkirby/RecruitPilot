@@ -95,7 +95,8 @@ def get_parameters(selected_job, job_description_input):
     return job_description
 
 
-# TODO: Switch to OpenAI function LLM call for more reliable response formatting - not an issue for now
+# TODO: Switch to OpenAI function LLM call for more reliable response formatting
+# not an issue for now
 @st.cache_data
 def Analyzing_Resume(
     _chat,
@@ -105,8 +106,10 @@ def Analyzing_Resume(
     print("Getting score...")
 
     template = f"""\
-You are an Industrial/Organizational Psychologist who is preparing to analyze an applicant based on a job description and resume, 
-and create a selection of interview questions specific to the applicant in order to determine their potential success in the role.
+You are an Industrial/Organizational Psychologist who is preparing to analyze an 
+applicant based on a job description and resume, 
+and create a selection of interview questions specific to the applicant in order to 
+determine their potential success in the role.
 
 Applicant Resume:
 -----------------
@@ -118,8 +121,10 @@ Job Key Areas of Responsibility:
 {job_description}
 -----------------
 
-Based on the job description and the information provided in the resume, please respond with an analysis of this applicant and a 
-selection of interview questions specific to this applicant and designed to understand better if this person will succeed in this role.
+Based on the job description and the information provided in the resume, please 
+respond with an analysis of this applicant and a 
+selection of interview questions specific to this applicant and designed to understand 
+better if this person will succeed in this role.
 
 Your Response Format:
 Applicant Name
