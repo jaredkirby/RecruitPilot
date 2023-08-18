@@ -1,4 +1,6 @@
 ADVERTISING_ASSISTANT_JOB_DESCRIPTION = """
+Position: Advertising Assistant
+
 Summary of Position:
 This in-house position is crucial for supporting our client's activity. The Advertising Assistant works closely with the account teams to execute both marketing and media campaigns across numerous clients. This individual will need to be a go-getter who can juggle multiple tasks, priorities, and programs. Excellent junior-level position with a fast-paced national advertising agency to learn and grow/start your marketing career.
 

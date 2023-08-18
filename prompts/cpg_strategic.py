@@ -1,4 +1,5 @@
 CPG_STRATEGIC_JOB_DESCRIPTION = """
+Position: Senior CPG Account Strategist
 1. Strategic Marketing Leadership
 Proven CPG experience.
 Ability to work with clients to develop strategic marketing plans.
