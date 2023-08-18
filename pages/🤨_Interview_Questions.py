@@ -1,10 +1,9 @@
 import os
-import io
 import logging
 import tempfile
 import streamlit as st
-from zipfile import ZipFile
 
+from langchain.callbacks.base import BaseCallbackHandler
 from langchain.document_loaders import PDFPlumberLoader
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import (
@@ -12,13 +11,17 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
 )
 
-from config import (
+from prompts.prompts_config import PROMPTS_MAPPING
+from config.interview_questions_config import (
+    MODEL,
+    SUB_TITLE,
+    INSTRUCTIONS,
+)
+from config.site_config import (
+    LAYOUT,
     PAGE_TITLE,
     PAGE_ICON,
-    SUB_TITLE,
-    LAYOUT,
-    PROMPTS_MAPPING,
-    MODEL_QUESTIONS,
+    FOOTER,
 )
 
 openai_api_key = st.secrets["OPENAI_API_KEY"]
@@ -26,6 +29,32 @@ openai_api_key = st.secrets["OPENAI_API_KEY"]
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class StreamHandler(BaseCallbackHandler):
+    def __init__(self, container, initial_text=""):
+        self.container = container
+        self.text = initial_text
+
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        self.text += token
+        self.container.markdown(self.text)
+
+
+def create_chat(stream_handler):
+    try:
+        _chat = ChatOpenAI(
+            temperature=0.0,
+            model=MODEL,
+            openai_api_key=openai_api_key,
+            request_timeout=250,
+            streaming=True,
+            callbacks=[stream_handler],
+        )
+    except Exception as e:
+        st.error(f"An error occurred while creating the chat session: {str(e)}")
+        _chat = None
+    return _chat
 
 
 @st.cache_data
@@ -53,9 +82,7 @@ def ingest_pdf(resume_file_buffer):
         raise
 
 
-def get_parameters(
-    selected_job, job_description_input, high_fit_resume_input, low_fit_resume_input
-):
+def get_parameters(selected_job, job_description_input):
     if selected_job == "Input your own":
         job_description = job_description_input
     else:
@@ -70,16 +97,12 @@ def get_parameters(
 
 # TODO: Switch to OpenAI function LLM call for more reliable response formatting - not an issue for now
 @st.cache_data
-def get_questions(
+def Analyzing_Resume(
+    _chat,
     resume_text,
     job_description,
 ):
     print("Getting score...")
-    llm = ChatOpenAI(
-        model=MODEL_QUESTIONS,
-        temperature=0.0,
-        openai_api_key=openai_api_key,
-    )
 
     template = f"""\
 You are an Industrial/Organizational Psychologist who is preparing to analyze an applicant based on a job description and resume, 
@@ -101,6 +124,8 @@ selection of interview questions specific to this applicant and designed to unde
 Your Response Format:
 Applicant Name
 
+Position Name
+
 List of positive attributes for the position
 
 List of negative attributes for the position
@@ -115,17 +140,9 @@ List of questions for the interview
         job_description=job_description,
     ).to_messages()
     # print(formatted_prompt)
-    llm = llm
+    llm = _chat
     result = llm(formatted_prompt)
     return result.content
-
-
-def parse_input(file, text_input_key):
-    if file:
-        resume_file_buffer = io.BytesIO(file.getbuffer())
-        return ingest_pdf(resume_file_buffer)
-    else:
-        return st.session_state[text_input_key]
 
 
 # Streamlit interface
@@ -139,23 +156,30 @@ st.markdown(
 st.divider()
 
 
-def select_job():
-    if "selected_job" not in st.session_state:
-        st.session_state.selected_job = "CEMM - Senior CPG Account Strategist"
-    st.session_state.selected_job = st.selectbox(
-        "Select an open position or add your own",
-        (
-            "CEMM - Senior CPG Account Strategist",
-            "CEMM - Advertising Assistant",
-            "Input your own",
-        ),
-        index=0,
-        key="job_selection",
-    )
-    return st.session_state.selected_job
+selected_job = st.selectbox(
+    "Select an open position or add your own",
+    (
+        "CEMM - Senior CPG Account Strategist",
+        "CEMM - Advertising Assistant",
+        "Input your own",
+    ),
+    index=0,
+    key="job_selection",
+)
 
+# Initialize the variables outside the conditional block
+job_description_file = None
 
-selected_job = select_job()
+if selected_job == "Input your own":
+    with st.expander("Custom Job", expanded=True):
+        st.text_area(
+            "Job Description Text",
+            placeholder="""Summary of Position:
+This in-house position is crucial for supporting our client's ...
+            """,
+            key="job_description_input",
+        )
+        job_description_file = st.file_uploader("Or upload a PDF", type=["pdf"])
 
 uploaded_resumes = st.file_uploader(
     "Upload Resumes (PDF files)", type=["pdf"], accept_multiple_files=True
@@ -165,14 +189,18 @@ start_button = st.button("Generate Questions")
 
 if uploaded_resumes and start_button:
     try:
-        zip_data, categorization_results = process_resumes(uploaded_resumes)
-        if zip_data:
-            st.download_button(
-                label="✨ Download Scores ✨",
-                data=zip_data,
-                file_name="scores.zip",
-                mime="application/zip",
-            )
+        for uploaded_resume in uploaded_resumes:
+            resume_text = ingest_pdf(uploaded_resume)
+            chat = create_chat(StreamHandler(st.empty()))
+            result = Analyzing_Resume(chat, resume_text, selected_job)
     except Exception as e:
         st.error(f"An error occurred during processing: {e}")
         logger.error(f"An error occurred during processing: {e}")
+else:
+    if start_button:
+        st.warning("Please upload resumes before starting the process.")
+
+with st.expander("🤔 How to Use"):
+    st.info(INSTRUCTIONS)
+
+st.markdown(FOOTER)

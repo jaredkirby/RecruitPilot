@@ -12,13 +12,17 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
 )
 
-from config import (
+from prompts.prompts_config import PROMPTS_MAPPING
+from config.resume_scoring_config import (
+    MODEL,
+    SUB_TITLE,
+    INSTRUCTIONS,
+)
+from config.site_config import (
+    LAYOUT,
     PAGE_TITLE,
     PAGE_ICON,
-    SUB_TITLE,
-    LAYOUT,
-    PROMPTS_MAPPING,
-    MODEL,
+    FOOTER,
 )
 
 openai_api_key = st.secrets["OPENAI_API_KEY"]
@@ -432,30 +436,6 @@ else:
 
 
 with st.expander("🤔 How to Use"):
-    st.info(
-        f"""
-This tool 🛠️ uses the OpenAI API 🧠 to score (with an explanation) and categorize resumes based on a job description Then provides a downloadable file with the original resumes in their respective categories.
+    st.info(INSTRUCTIONS)
 
-1️⃣) Select a job description from the dropdown menu or input your own ✏️.
-
-1️⃣ .5) If you input your own job description, you can also upload a PDF or enter text examples of a high-fit ✅ and low-fit ❌ resume to the specified job description. This will increase the accuracy 🎯 of the scoring.
-
-2️⃣) Upload resumes to score and categorize 📑. You can upload multiple resumes at once.
-
-3️⃣) Click the "Start Scoring Resumes" button.
-
-4️⃣) Once the process is complete, a download button will appear to export the scores and categorized resumes 📥.
-
-📌Note: The OpenAI models do make mistakes 😅 and the results may not be perfect ✨. If you have any questions or feedback, please reach out to me on [Twitter](https://twitter.com/Kirby_).
-            """
-    )
-
-st.markdown(
-    """
-    ---
-    Built by **Jared Kirby** :wave:
-
-    [Twitter](https://twitter.com/Kirby_) | [GitHub](https://github.com/jaredkirby) | [LinkedIn](https://www.linkedin.com/in/jared-kirby/) | [Portfolio](https://www.jaredkirby.me)
-
-        """
-)
+st.markdown(FOOTER)
