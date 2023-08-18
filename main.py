@@ -449,13 +449,3 @@ This tool 🛠️ uses the OpenAI API 🧠 to score (with an explanation) and ca
 📌Note: The OpenAI models do make mistakes 😅 and the results may not be perfect ✨. If you have any questions or feedback, please reach out to me on [Twitter](https://twitter.com/Kirby_).
             """
     )
-
-st.markdown(
-    """
-    ---
-    Built by **Jared Kirby** :wave:
-
-    [Twitter](https://twitter.com/Kirby_) | [GitHub](https://github.com/jaredkirby) | [LinkedIn](https://www.linkedin.com/in/jared-kirby/) | [Portfolio](https://www.jaredkirby.me)
-
-        """
-)
