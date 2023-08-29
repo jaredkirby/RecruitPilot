@@ -1,6 +1,7 @@
-- Switch LLM call to use the OpenAI Functions API
-- Config file
-- PDF upload for custom inputs
-- Display names of "best" resumes after processing + download all
-- Improve status messages 
-- Create system to auto generate sample high and low resumes based on job description
+- [ ] async
+- [ ] Switch LLM call to use the OpenAI Functions API
+- [x] Config file
+- [x] PDF upload for custom inputs
+- [x] Display names of "best" resumes after processing + download all
+- [ ] Improve status messages 
+- [ ] Create system to auto generate sample high and low resumes based on job description
