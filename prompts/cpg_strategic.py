@@ -34,6 +34,9 @@ Interpersonal/communication skills.
 Presentation development skills.
 Ability to manage multiple projects and tight deadlines.
 Openness to travel.
+
+ATTENTION:
+In order to score over a 0.80, the candidate MUST have CPG marketing experience.
 """
 
 CPG_STRATEGIC_HIGH_FIT_RESUME = """
