@@ -1,5 +1,5 @@
 # LLM
-MODEL = "gpt-3.5-turbo-16k"
+MODEL = "gpt-3.5-turbo-16k-0613"
 
 # Tool Name
 SUB_TITLE = "📈 Resume Scoring"

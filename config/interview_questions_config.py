@@ -1,5 +1,5 @@
 # LLM
-MODEL = "gpt-4"
+MODEL = "gpt-4-0613"
 
 # Tool Name
 SUB_TITLE = "🤨 Interview Questions"
