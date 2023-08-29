@@ -1,11 +1,14 @@
 import os
 import io
+import re
 import logging
 import tempfile
+import datetime
 import streamlit as st
 from zipfile import ZipFile
 
 from langchain.document_loaders import PDFPlumberLoader
+from langchain.document_loaders import Docx2txtLoader
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import (
     ChatPromptTemplate,
@@ -25,6 +28,11 @@ from config.site_config import (
     FOOTER,
 )
 
+import codecs
+emojis = ["🤔", "✨"]
+for emoji in emojis:
+    encoded_emoji = codecs.encode(emoji, "UTF-8", errors="replace")
+
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 # Set up logging
@@ -33,35 +41,41 @@ logger = logging.getLogger(__name__)
 
 
 @st.cache_data
-def ingest_pdf(resume_file_buffer):
-    print("Loading resume...")
+def ingest_document(document_file_buffer, file_type):
+    print("Loading document...")
     try:
         # Create a temporary file manually
-        temp_file_path = tempfile.mktemp(suffix=".pdf")
+        temp_file_path = tempfile.mktemp(suffix=file_type)
         with open(temp_file_path, "wb") as temp_file:
-            temp_file.write(resume_file_buffer.read())
+            temp_file.write(document_file_buffer.read())
 
         # Use the temporary file path
-        loader = PDFPlumberLoader(temp_file_path)
+        if file_type == ".pdf":
+            loader = PDFPlumberLoader(temp_file_path)
+        elif file_type == ".docx":
+            loader = Docx2txtLoader(temp_file_path)
+        else:
+            raise ValueError("Unsupported file type")
+
         documents = loader.load()
-        resume_text = " ".join(document.page_content for document in documents)
-        print("Resume loaded successfully.")
+        document_text = " ".join(document.page_content for document in documents)
+        print("Document loaded successfully.")
 
         # Delete the temporary file
         os.remove(temp_file_path)
 
-        return resume_text
+        return document_text
     except Exception as e:
-        logger.error(f"An error occurred while loading the resume: {e}")
-        st.error(f"An error occurred while loading the resume: {e}")
+        logger.error(f"An error occurred while loading the document: {e}")
+        st.error(f"An error occurred while loading the document: {e}")
         raise
 
 
 def save_to_category_buffer(
-    category, applicant_name, resume_bytes, response_content, main_zip
+    category, applicant_name, resume_bytes, response_content, main_zip, file_type
 ):
-    # Add the PDF file
-    main_zip.writestr(f"{category}/{applicant_name}/{applicant_name}.pdf", resume_bytes)
+    # Add the file
+    main_zip.writestr(f"{category}/{applicant_name}/{applicant_name}{file_type}", resume_bytes)
 
     # Add the response text
     main_zip.writestr(
@@ -169,10 +183,17 @@ Respond with only the score and explanation. Do not include the resume or job
 description in your response.
 
 RESPONSE FORMAT:
-Job Fit Score: 
 Explanation:
-
 Job Fit Score:
+
+RESPONSE EXAMPLE:
+Explanation:
+The applicant has a strong background in sales, marketing, and strategic planning, which aligns with the job's requirements. They have demonstrated success in building and growing client relationships, managing teams, and achieving revenue targets. However, the applicant does not have specific experience in the CPG industry, which is a key requirement for this role. Additionally, the applicant's resume does not indicate any grocery retail experience or a college degree, both of which are preferred for this position. Therefore, while the applicant has many transferable skills and experiences, they do not fully meet the specific industry experience and educational requirements for this role.
+Job Fit Score: 
+0.65
+
+
+Explanation:
     """
 
     user_prompt = HumanMessagePromptTemplate.from_template(template=template)
@@ -191,33 +212,32 @@ Job Fit Score:
     return result.content
 
 
+
 def parse_score_and_explanation(result_content):
-    # Assuming the score and explanation are on separate lines
+    # Assuming the score is a float in the last line and the explanation is all the lines before the last line
     lines = result_content.split("\n")
-    score = float(lines[0])  # Assuming the score is on the first line
-    explanation = lines[1] if len(lines) > 1 else ""  # Explanation on the second line
+    score_line = lines[-1]  # Assuming the score is in the last line
+    score = float(re.search(r"[-+]?\d*\.\d+|\d+", score_line).group())  # Extract the float from the last line
+    explanation = "\n".join(lines[:-1])  # Explanation is all the lines before the last line
     return score, explanation
 
 
-def categorize_score(score, threshold1, threshold2):
-    if score > threshold1:
+def categorize_score(score, threshold1, threshold2, threshold3):
+    if score >= threshold1:
         return "best"
-    elif score > threshold2:
+    elif score >= threshold2:
+        return "better"
+    elif score >= threshold3:
         return "good"
     else:
         return "rest"
 
 
-def parse_resume_bytes(resume_bytes):
-    resume_file_buffer = io.BytesIO(resume_bytes)
-    resume_text = ingest_pdf(resume_file_buffer)
-    return resume_text
-
-
 def parse_input(file, text_input_key):
     if file:
-        resume_file_buffer = io.BytesIO(file.getbuffer())
-        return ingest_pdf(resume_file_buffer)
+        file_type = ".pdf" if file.type == "application/pdf" else ".docx"
+        file_buffer = file.getbuffer() if file else None
+        return ingest_document(file_buffer, file_type)
     else:
         return st.session_state[text_input_key]
 
@@ -229,7 +249,7 @@ def process_resumes(uploaded_resumes):
     low_fit_resume_input = st.session_state.low_fit_resume_input
 
     # Create a dictionary to store the categorization results
-    categorization_results = {"best": [], "good": [], "rest": []}
+    categorization_results = {"best": [], "better": [], "good": [], "rest": []}
 
     # Parse the custom user input
     job_description = parse_input(job_description_file, "job_description_input")
@@ -245,36 +265,54 @@ def process_resumes(uploaded_resumes):
     try:
         with ZipFile(zip_buffer, "a") as main_zip:
             for i, resume_file in enumerate(uploaded_resumes):
-                # User stopping mechanism
-                if st.session_state.stop_button_clicked:
-                    st.session_state.status_text = "Process stopped by user."
-                    break
 
                 # Update progress
                 st.session_state.status_text = (
                     f"Processing resume {i + 1}/{len(uploaded_resumes)}..."
                 )
 
-                # Read and parse resume bytes
-                resume_bytes = resume_file.getbuffer()
-                resume_text = parse_resume_bytes(resume_bytes)
+                try:
+                    # Determine the file type
+                    if resume_file.type == "application/pdf":
+                        file_type = ".pdf"
+                    elif resume_file.type in ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword"]:
+                        file_type = ".docx"
+                    else:
+                        st.error(f"Unsupported file type: {resume_file.type}")
+                        continue
 
-                # Get score for the resume
-                result_content = get_score(
-                    resume_text, job_description, high_fit_resume, low_fit_resume
-                )
-                score, _ = parse_score_and_explanation(result_content)
+                    # Read and parse resume bytes
+                    resume_bytes = resume_file.getbuffer()
+                    resume_file_buffer = io.BytesIO(resume_bytes)
+                    file_type = ".pdf" if resume_file.type == "application/pdf" else ".docx"  # or determine file_type some other way
+                    resume_text = ingest_document(resume_file_buffer, file_type)
 
-                # Categorize the score
-                category = categorize_score(score, best_select, good_select)
+                    # Get score for the resume
+                    result_content = get_score(
+                        resume_text, job_description, high_fit_resume, low_fit_resume
+                    )
+                    score, _ = parse_score_and_explanation(result_content)
 
-                # Save the resume to the appropriate category buffer
-                applicant_name = os.path.splitext(resume_file.name)[0]
-                categorization_results[category].append(applicant_name)
+                    # Categorize the score
+                    category = categorize_score(score, best_select, better_select, good_select)
 
-                save_to_category_buffer(
-                    category, applicant_name, resume_bytes, result_content, main_zip
-                )
+                    # Save the resume to the appropriate category buffer
+                    applicant_name = os.path.splitext(resume_file.name)[0]
+                    categorization_results[category].append(applicant_name)
+
+                    save_to_category_buffer(
+                        category, 
+                        applicant_name, 
+                        resume_bytes, 
+                        result_content, 
+                        main_zip, 
+                        file_type
+                    )
+
+                except Exception as e:
+                    logger.error(f"An error occurred while processing the resume {resume_file.name}: {e}")
+                    st.error(f"An error occurred while processing the resume {resume_file.name}: {e}")
+                    continue
 
                 # Update progress bar
                 st.session_state.progress = (i + 1) / len(uploaded_resumes)
@@ -346,7 +384,10 @@ This in-house position is crucial for supporting our client's ...
             """,
             key="job_description_input",
         )
-        job_description_file = st.file_uploader("Or upload a PDF", type=["pdf"])
+        job_description_file = st.file_uploader(
+            "Or upload a PDF or Word Doc of the job description", 
+            type=["pdf", "docx"]
+            )
 
         have_resume_examples = st.checkbox(
             "I have good and/or bad resume examples",
@@ -355,14 +396,14 @@ This in-house position is crucial for supporting our client's ...
         )
         if have_resume_examples:
             high_fit_resume_file = st.file_uploader(
-                "Upload High-Fit Resume Example (optional)", type=["pdf"]
+                "Upload High-Fit Resume Example (optional)", type=["pdf", "docx"]
             )
             is_high_text = st.checkbox("Enter as text", key="is_high_text")
             if is_high_text:
                 st.text_area("High-Fit Text", key="high_fit_resume_input")
 
             low_fit_resume_file = st.file_uploader(
-                "Upload Low-Fit Resume Example (optional)", type=["pdf"]
+                "Upload Low-Fit Resume Example (optional)", type=["pdf", "docx"]
             )
             is_low_text = st.checkbox("Enter as text", key="is_low_text")
             if is_low_text:
@@ -370,24 +411,35 @@ This in-house position is crucial for supporting our client's ...
 
 
 uploaded_resumes = st.file_uploader(
-    "Upload Resumes (PDF files)", type=["pdf"], accept_multiple_files=True
+    "Upload Resumes (PDF or Word files)", type=["pdf", "docx"], 
+    accept_multiple_files=True
 )
 
 if uploaded_resumes:
     best_select = st.slider(
         "Select a 'best' score threshold",
-        0.0,
-        1.0,
-        0.8,
-        help="Default is 0.8. The lower the threshold, the more resumes will be \
+        0.00,
+        1.00,
+        0.81,
+        help="Default is 0.81. The lower the threshold, the more resumes will be \
             categorized as 'best'.",
     )
+
+    better_select = st.slider(
+        "Select a 'better' score threshold",
+        0.00,
+        1.00,
+        0.71,
+        help="Default is 0.71. The lower the threshold, the more resumes will be \
+            categorized as 'better'.",
+    )
+
     good_select = st.slider(
         "Select a 'good' score threshold",
-        0.0,
-        1.0,
-        0.6,
-        help="Default is 0.6. The lower the threshold, the more resumes will be \
+        0.00,
+        1.00,
+        0.61,
+        help="Default is 0.61. The lower the threshold, the more resumes will be \
             categorized as 'good'.",
     )
 
@@ -423,10 +475,12 @@ if uploaded_resumes and start_button:
         if result is not None:
             zip_data, categorization_results = result
             if zip_data:
+                # Get today's date in the format YYYY-MM-DD
+                today = datetime.date.today().strftime("%Y-%m-%d")
                 st.download_button(
                     label="✨ Download Scores ✨",
                     data=zip_data,
-                    file_name="scores.zip",
+                    file_name=f"scored_resumes_{today}.zip",
                     mime="application/zip",
                 )
             # Displaying the results
@@ -439,7 +493,7 @@ if uploaded_resumes and start_button:
     except Exception as e:
         st.error(f"An error occurred during processing: {e}")
         logger.error(f"An error occurred during processing: {e}")
-    st.session_state.status_text = "Process completed. Download the scores below."
+    st.session_state.status_text = "Process completed."
     st.session_state.processing = False
 else:
     if start_button:
