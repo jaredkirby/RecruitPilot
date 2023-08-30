@@ -21,7 +21,7 @@ from config.site_config import (
     LAYOUT,
     PAGE_TITLE,
     PAGE_ICON,
-    FOOTER,
+    #FOOTER,
 )
 
 openai_api_key = st.secrets["OPENAI_API_KEY"]

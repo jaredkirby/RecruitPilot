@@ -25,7 +25,7 @@ from config.site_config import (
     LAYOUT,
     PAGE_TITLE,
     PAGE_ICON,
-    FOOTER,
+    #FOOTER,
 )
 
 import codecs

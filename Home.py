@@ -4,7 +4,7 @@ from config.site_config import (
     LAYOUT,
     PAGE_TITLE,
     PAGE_ICON,
-    FOOTER,
+    #FOOTER,
 )
 
 st.set_page_config(page_title=PAGE_TITLE, page_icon=PAGE_ICON, layout=LAYOUT)
@@ -12,5 +12,5 @@ st.markdown(
     f"<h1 style='text-align: center;'>{PAGE_TITLE} {PAGE_ICON}</h1>",
     unsafe_allow_html=True,
 )
-st.markdown("## <-- click on a tool over there!")
+st.markdown("## 🡨 click on a tool over there!")
 # st.markdown(FOOTER)
