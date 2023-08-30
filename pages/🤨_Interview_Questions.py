@@ -103,7 +103,7 @@ def Analyzing_Resume(
     resume_text,
     job_description,
 ):
-    print("Getting score...")
+    print("Getting analysis...")
 
     template = f"""\
 You are an Industrial/Organizational Psychologist who is preparing to analyze an 
@@ -198,12 +198,23 @@ if uploaded_resumes and start_button:
             resume_text = ingest_pdf(uploaded_resume)
             chat = create_chat(StreamHandler(st.empty()))
             result = Analyzing_Resume(chat, resume_text, selected_job)
+            # Set a flag in session state to indicate a resume has been processed
+            st.session_state.resume_processed = True
     except Exception as e:
         st.error(f"An error occurred during processing: {e}")
         logger.error(f"An error occurred during processing: {e}")
 else:
     if start_button:
         st.warning("Please upload resumes before starting the process.")
+
+# Check if a resume has been processed before displaying the button
+if st.session_state.get('resume_processed', False):
+    if st.button("New Resume"):
+        # Clear the cache when the button is clicked
+        st.cache_data.clear()
+        # Reset the flag in session state
+        st.session_state.resume_processed = False
+    st.write("Note: Clear any uploaded resumes from upload box before uploading new ones!")
 
 with st.expander("🤔 How to Use"):
     st.info(INSTRUCTIONS)
