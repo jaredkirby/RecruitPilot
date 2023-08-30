@@ -12,5 +12,5 @@ st.markdown(
     f"<h1 style='text-align: center;'>{PAGE_TITLE} {PAGE_ICON}</h1>",
     unsafe_allow_html=True,
 )
-st.markdown("### this is a site of 🚮 tools")
-st.markdown(FOOTER)
+st.markdown("## <-- click on a tool over there!")
+# st.markdown(FOOTER)

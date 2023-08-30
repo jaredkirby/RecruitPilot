@@ -208,4 +208,4 @@ else:
 with st.expander("🤔 How to Use"):
     st.info(INSTRUCTIONS)
 
-st.markdown(FOOTER)
+# st.markdown(FOOTER)
